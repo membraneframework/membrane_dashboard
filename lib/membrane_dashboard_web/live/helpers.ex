@@ -159,7 +159,7 @@ defmodule Membrane.DashboardWeb.Live.Helpers do
     min_width = Map.get(assigns, :min_width, "min-w-max")
 
     ~H"""
-    <div class="group relative">
+    <div data-type="tooltip" class="group relative">
       <%= render_slot(@inner_block) %>
       <span class={"#{@class} transition-all delay-150 duration-500 absolute z-10 #{min_width} text-xs font-medium leading-none whitespace-no-wrap text-white p-2 opacity-0 group-hover:opacity-95 invisible group-hover:visible bg-gray-800 shadow-lg rounded-md"}>
         <%= @text %>

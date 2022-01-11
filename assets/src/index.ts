@@ -6,6 +6,7 @@ import DagreHook from "./hooks/DagreHook";
 import topbar from "topbar";
 import { LiveSocket } from "phoenix_live_view";
 import { Socket } from "phoenix";
+import LogsHook from "./hooks/LogsHook";
 
 declare global {
   interface Window {
@@ -17,6 +18,7 @@ declare global {
 const Hooks = {
   Dagre: DagreHook,
   Charts: ChartsHook,
+  Logs: LogsHook,
 };
 
 const csrfToken = document

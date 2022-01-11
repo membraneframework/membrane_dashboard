@@ -42,6 +42,7 @@ defmodule Membrane.DashboardWeb.DashboardLive do
         update_range: @initial_time_offset,
 
         # cached query data
+        logs: [],
         available_metrics: @metrics_with_descriptions,
         metrics: [],
         data_manager: nil,
@@ -158,6 +159,12 @@ defmodule Membrane.DashboardWeb.DashboardLive do
   def handle_info({:data_query, :alive_pipelines, alive_pipelines}, socket) do
     socket
     |> assign(alive_pipelines: alive_pipelines)
+    |> noreply()
+  end
+
+  def handle_info({:data_query, :logs, logs}, socket) do
+    socket
+    |> assign(logs: logs)
     |> noreply()
   end
 

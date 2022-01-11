@@ -211,6 +211,8 @@
     <.live_component module={Membrane.DashboardWeb.Live.Components.AlivePipelines} id="alive-pipelines", alive_pipelines={@alive_pipelines} />
   <% end %>
 
+  <.live_component module={Membrane.DashboardWeb.Live.Components.Logs} id = "logs" logs={@logs} />
+
   <div id="charts" class="m-4">
     <.live_component 
       id="elements-select" 

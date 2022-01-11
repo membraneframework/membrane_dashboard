@@ -32,7 +32,15 @@ defmodule Membrane.Dashboard.DataManager do
 
   @impl true
   def init(_opts) do
-    {:ok, %{chart_contexts: %{}, alive_pipelines: [], last_query: nil}}
+    state = %{
+      chart_contexts: %{},
+      alive_pipelines: [],
+      last_query: nil,
+      logs: [],
+      last_log_timestamp: nil
+    }
+
+    {:ok, state}
   end
 
   @impl true
@@ -48,10 +56,12 @@ defmodule Membrane.Dashboard.DataManager do
 
     send_data(respond_to, :query_start)
 
+    #### DAGRE ####
     {:ok, dagre} = Dagre.query(time_from, time_to)
 
     send_data(respond_to, :dagre, dagre)
 
+    #### CHARTS ####
     accuracy = Keyword.fetch!(options, :accuracy)
     metrics = Keyword.fetch!(options, :metrics)
 
@@ -89,6 +99,7 @@ defmodule Membrane.Dashboard.DataManager do
         [{metric, context} | contexts]
       end)
 
+    #### ALIVE PIPELINES ####
     alive_pipelines =
       Membrane.Dashboard.PipelineMarking.list_alive_pipelines(
         time_to
@@ -98,12 +109,23 @@ defmodule Membrane.Dashboard.DataManager do
 
     send_data(respond_to, :alive_pipelines, alive_pipelines)
 
+    #### LOGS ####
+    {:ok, logs} = Membrane.Dashboard.Logs.query(logs_time_from(mode, time_from, state), time_to)
+
+    last_log_timestamp = List.last(logs, %{}) |> Map.get(:time) || time_to
+
+    logs = merge_logs(mode, logs, state)
+
+    send_data(respond_to, :logs, logs)
+
     send_data(respond_to, :query_end, {time_from, time_to})
 
     state = %{
       chart_contexts: Map.new(chart_contexts),
       alive_pipelines: alive_pipelines,
-      last_query: DateTime.utc_now()
+      last_query: DateTime.utc_now(),
+      last_log_timestamp: last_log_timestamp,
+      logs: logs
     }
 
     {:noreply, state}
@@ -120,6 +142,32 @@ defmodule Membrane.Dashboard.DataManager do
     old_context
     |> struct(Map.take(new_context, [:time_from, :time_to, :metrics, :accuracy]))
     |> Map.replace!(:latest_time, latest_time_to)
+  end
+
+  defp merge_logs(:update, new_logs, state) do
+    Enum.reverse(Enum.reverse(new_logs) ++ Enum.reverse(state.logs))
+  end
+
+  defp merge_logs(:full, new_logs, _state) do
+    new_logs
+  end
+
+  defp logs_time_from(:update, time_from, state) do
+    case state.last_log_timestamp do
+      nil ->
+        time_from
+
+      # add an arbitrary amount of time so that we avoid querying last log once again
+      %NaiveDateTime{} = time ->
+        NaiveDateTime.add(time, 1, :millisecond)
+
+      time ->
+        time
+    end
+  end
+
+  defp logs_time_from(:full, time_from, _state) do
+    time_from
   end
 
   defp send_data(respond_to, type) do
